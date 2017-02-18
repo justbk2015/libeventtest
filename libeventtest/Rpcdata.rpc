@@ -1,0 +1,8 @@
+struct RpcRequestInfo {
+    int a = 1;
+    string p = 2;
+}
+struct RpcReplyInfo {
+    int b = 1;
+    string p = 2;
+}
