@@ -3,6 +3,7 @@
 #include <WinSock2.h>
 #include <windows.h>
 #include "UseLog.h"
+#include "../commonlog/include/Thread.h"
 #include "UseLibevent.h"
 #include "Rpcdata.h"
 
@@ -75,8 +76,10 @@ http_setup(ev_uint16_t port)
     port = regress_get_socket_port(evhttp_bound_socket_get_fd(sock));
     return (myhttp);
 }
-int main(int argc, char** argv)
+typedef void (*THREAD_CALL_BACK_FUNC)(void*) ;
+void back_run(void* _t)
 {
+    zb::Thread<THREAD_CALL_BACK_FUNC> *pt = static_cast<zb::Thread<THREAD_CALL_BACK_FUNC> *>(_t);
     WORD dwWord;
     WSADATA data;
     dwWord = MAKEWORD(2,2);
@@ -86,9 +89,21 @@ int main(int argc, char** argv)
     struct evhttp* http = http_setup(port);
     logd("bind port on %d", port);
     struct evrpc_base* rpc_base = evrpc_init(http);
-    
+
     EVRPC_REGISTER(rpc_base, Message, RpcRequestInfo, RpcReplyInfo, MessageCb, NULL);
     event_base_dispatch(g_base);
+    logd("break by other thread!");
+}
+int main(int argc, char** argv)
+{
+    zb::Thread<THREAD_CALL_BACK_FUNC> t(back_run);
+    t.begin();
+
+    getchar();
+    timeval tb;
+    tb.tv_sec = 1;
+    tb.tv_usec = 0;
+    event_base_loopexit(g_base, &tb);
     getchar();
     return 0;
 }
